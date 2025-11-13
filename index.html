@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎯 Guess Master 3.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+    body {
+      font-family: "Poppins", sans-serif;
+      background: radial-gradient(circle at top left, #1e1b4b, #0f172a);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      width: 400px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+      text-align: center;
+      padding: 30px;
+      box-shadow: 0 0 20px rgba(124,58,237,0.5);
+    }
+
+    h1 { color: #10b981; }
+
+    select, input {
+      width: 80%;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      text-align: center;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    button {
+      background: #7c3aed;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 5px;
+      transition: 0.3s;
+    }
+    button:hover { background: #10b981; transform: scale(1.05); }
+
+    .score {
+      margin-top: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 8px;
+    }
+
+    .glow {
+      text-shadow: 0 0 10px #00ffcc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Guess Master 3.0</h1>
+    <p>Pilih level dan coba tebak angkanya!</p>
+
+    <select id="level" onchange="setLevel()">
+      <option value="10">Easy (1–10)</option>
+      <option value="30">Medium (1–30)</option>
+      <option value="50">Hard (1–50)</option>
+    </select>
+
+    <input type="number" id="tebakan" placeholder="Masukkan angka...">
+    <div>
+      <button onclick="cekTebakan()">Cek</button>
+      <button onclick="resetGame()">Ulang</button>
+    </div>
+
+    <p id="hasil"></p>
+    <div id="riwayat"></div>
+    <div class="score">
+      ❤️ Kesempatan: <span id="kesempatan">5</span> | 🧠 Skor: <span id="skor">0</span>
+    </div>
+  </div>
+
+  <audio id="soundWin" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_bf4bb75d7c.mp3?filename=success-1-6297.mp3"></audio>
+  <audio id="soundLose" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_119b4acfd1.mp3?filename=error-1-126517.mp3"></audio>
+  <audio id="soundClick" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_1b2322ab1c.mp3?filename=click-21156.mp3"></audio>
+
+  <script>
+    let angkaBenar;
+    let batas = 10;
+    let kesempatan = 5;
+    let riwayat = [];
+    let skor = 0;
+
+    function acakAngka() {
+      angkaBenar = Math.floor(Math.random() * batas) + 1;
+    }
+
+    function setLevel() {
+      const select = document.getElementById("level");
+      batas = parseInt(select.value);
+      resetGame();
+      Swal.fire('🔢 Level Berubah!',
+        'Sekarang tebak angka antara 1–' + batas,
+        'info');
+    }
+
+    function cekTebakan() {
+      const input = document.getElementById("tebakan");
+      const hasil = document.getElementById("hasil");
+      const riwayatEl = document.getElementById("riwayat");
+      const kesempatanEl = document.getElementById("kesempatan");
+      const skorEl = document.getElementById("skor");
+      const click = document.getElementById("soundClick");
+      const win = document.getElementById("soundWin");
+      const lose = document.getElementById("soundLose");
+
+      click.play();
+
+      let tebakan = parseInt(input.value);
+      if (isNaN(tebakan) || tebakan < 1 || tebakan > batas) {
+        Swal.fire('⚠️ Input tidak valid', 'Masukkan angka antara 1–' + batas, 'warning');
+        return;
+      }
+
+      riwayat.push(tebakan);
+      riwayatEl.innerHTML = "Riwayat tebakan: " + riwayat.join(", ");
+
+      if (tebakan === angkaBenar) {
+        hasil.innerHTML = `🎉 Benar! Angkanya ${angkaBenar}`;
+        hasil.style.color = "#10b981";
+        hasil.classList.add("glow");
+        skor += 10;
+        skorEl.textContent = skor;
+        win.play();
+        Swal.fire('🎉 Selamat!', 'Kamu menebak dengan benar!\nAngkanya ' + angkaBenar, 'success');
+        disableInput();
+      } else {
+        kesempatan--;
+        kesempatanEl.textContent = kesempatan;
+
+        if (kesempatan === 0) {
+          hasil.innerHTML = `💀 Game Over! Angkanya ${angkaBenar}`;
+          hasil.style.color = "#ef4444";
+          lose.play();
+          Swal.fire('💀 Game Over', 'Angka yang benar: ' + angkaBenar, 'error');
+          disableInput();
+        } else if (tebakan < angkaBenar) {
+          hasil.innerHTML = "📉 Terlalu kecil!";
+          hasil.style.color = "#facc15";
+          lose.play();
+          Swal.fire('📉 Terlalu kecil', 'Coba angka lebih besar!', 'info');
+        } else {
+          hasil.innerHTML = "📈 Terlalu besar!";
+          hasil.style.color = "#facc15";
+          lose.play();
+          Swal.fire('📈 Terlalu besar', 'Coba angka lebih kecil!', 'info');
+        }
+      }
+
+      input.value = "";
+    }
+
+    function disableInput() {
+      document.getElementById("tebakan").disabled = true;
+    }
+
+    function resetGame() {
+      acakAngka();
+      kesempatan = 5;
+      riwayat = [];
+      document.getElementById("hasil").innerHTML = "";
+      document.getElementById("riwayat").innerHTML = "";
+      document.getElementById("kesempatan").textContent = kesempatan;
+      document.getElementById("tebakan").disabled = false;
+      document.getElementById("tebakan").value = "";
+      Swal.fire('🔁 Game Baru!', 'Tebak angka antara 1–' + batas, 'info');
+    }
+
+    acakAngka();
+  </script>
+</body>
+</html>
